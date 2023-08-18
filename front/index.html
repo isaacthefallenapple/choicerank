@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hello, world!</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="" />
+    <!-- <link rel="icon" href="favicon.png" /> -->
+    <script
+      src="https://unpkg.com/htmx.org@1.9.4"
+      integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+
+  <body>
+    <h1>ChoiceRank</h1>
+    <main>
+      <section>
+        <h2>Join</h2>
+        <form hx-get="/vote">
+          <label for="code">Code</label>
+          <input type="text" id="code" name="code" value="" />
+          <button type="submit">Vote</button>
+        </form>
+      </section>
+      <section>
+        <h2>New</h2>
+      </section>
+    </main>
+  </body>
+</html>
