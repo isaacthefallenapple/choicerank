@@ -12,8 +12,14 @@ async fn tide(
 
     // app.at("/").get(|_| async { Ok("Hello, world!") });
     app.at("/").serve_file(static_folder.join("index.html"))?;
-    app.at("/vote").get(vote);
-    app.at("/vote/:code").get(vote);
+    app.at("/vote").nest({
+        let mut api = tide::new();
+        api.at("/").get(vote);
+        api.at("/new").patch(|_| async { Ok("<h3>hello</h3>") });
+        api.at("/new").serve_file(static_folder.join("new.html"))?;
+        api.at("/:code").get(vote);
+        api
+    });
 
     Ok(app.into())
 }
