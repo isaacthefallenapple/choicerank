@@ -1,37 +1,63 @@
-<h1>Create a new Vote!</h1>
+<html>
+  <head>
+    <script
+      src="https://unpkg.com/htmx.org@1.9.4"
+      integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
+  </head>
+  <body>
+    <h1>Create a new Vote!</h1>
 
-<main>
-  <form hx-boost="true" action="/vote/new" method="post">
-    <section>
-      <label for="title">Title</label>
-      <input type="text" id="title" name="title" value="" />
-    </section>
-    <section>
-      <div id="new-choice-mask">
-        <label for="new-choice">New choice</label>
-        <input type="text" id="new-choice" name="new-choice" value="" />
-        <button
-          type="button"
-          hx-patch="/vote/new"
-          hx-include="#new-choice"
-          hx-swap="beforebegin"
-          hx-target="#new-choice-mask"
-        >
-          Add
-        </button>
-      </div>
-    </section>
-    <section>
-      <label for="choices">Max. choices</label>
-      <input type="number" id="choices" name="choices" value="" />
+    <main>
+      <form hx-boost="true" action="/vote/new" method="post">
+        <section>
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" value="" />
+        </section>
+        <section>
+          <input type="hidden" name="choices" value="" />
+          <ul
+            id="choice-list"
+            _="
+              on change or input
+                set @value of target to value of target
+                set values to value of .choice
+                call values.join('|||') then set @value of <input[name='choices']/> to it"
+          >
+            <li>
+              <input type="text" class="choice" value="" />
+            </li>
+          </ul>
+          <button
+            type="button"
+            _="
+              on click
+                append `
+                  <li>
+                    <input type='text' class='choice' />
+                    <button type='button' _='on click remove closest <li/> then decrement value of #max-choices'>Remove</button>
+                  </li>`
+                to #choice-list
+                increment value of #max-choices"
+          >
+            Add choice
+          </button>
+        </section>
+        <section>
+          <label for="max-choices">Max. choices</label>
+          <input type="number" id="max-choices" name="max-choices" value="1" />
 
-      <label for="anonymous">Anonymous?</label>
-      <input type="checkbox" id="anonymous" name="anonymous" />
+          <label for="anonymous">Anonymous?</label>
+          <input type="checkbox" id="anonymous" name="anonymous" value="true" />
 
-      <label for="password">Password?</label>
-      <input type="text" id="password" name="password" value="" />
+          <label for="password">Password?</label>
+          <input type="text" id="password" name="password" value="" />
 
-      <button type="submit">Start</button>
-    </section>
-  </form>
-</main>
+          <button type="submit">Start</button>
+        </section>
+      </form>
+    </main>
+  </body>
+</html>
