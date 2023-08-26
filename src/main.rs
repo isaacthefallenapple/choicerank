@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::format, path::PathBuf};
 
 use serde::Deserialize;
+use sqlx::{Executor, PgPool};
 use tide::Request;
 
 mod vote;
@@ -8,7 +9,15 @@ mod vote;
 #[shuttle_runtime::main]
 async fn tide(
     #[shuttle_static_folder::StaticFolder(folder = "front")] static_folder: PathBuf,
+    #[shuttle_aws_rds::Postgres(
+        local_uri = "postgres://timob:{secrets.PASSWORD}@localhost:5432/choicerank"
+    )]
+    pool: PgPool,
 ) -> shuttle_tide::ShuttleTide<()> {
+    pool.execute("create table test(id integer);")
+        .await
+        .map_err(shuttle_runtime::CustomError::new)?;
+
     let mut app = tide::new();
     app.with(tide::log::LogMiddleware::new());
 
