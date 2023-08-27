@@ -1,10 +1,14 @@
-use std::{collections::HashMap, fmt::format, path::PathBuf};
+use std::path::PathBuf;
 
 use serde::Deserialize;
 use sqlx::{Executor, PgPool};
-use tide::Request;
 
-mod vote;
+#[derive(Debug, Clone)]
+struct Model {
+    db: PgPool,
+}
+
+type Request = tide::Request<Model>;
 
 #[shuttle_runtime::main]
 async fn tide(
@@ -13,18 +17,15 @@ async fn tide(
         local_uri = "postgres://timob:{secrets.PASSWORD}@localhost:5432/choicerank"
     )]
     pool: PgPool,
-) -> shuttle_tide::ShuttleTide<()> {
-    pool.execute("create table test(id integer);")
-        .await
-        .map_err(shuttle_runtime::CustomError::new)?;
+) -> shuttle_tide::ShuttleTide<Model> {
+    let mut app = tide::with_state(Model { db: pool.clone() });
 
-    let mut app = tide::new();
     app.with(tide::log::LogMiddleware::new());
 
     // app.at("/").get(|_| async { Ok("Hello, world!") });
     app.at("/").serve_file(static_folder.join("index.html"))?;
     app.at("/vote").nest({
-        let mut api = tide::new();
+        let mut api = tide::with_state(Model { db: pool });
         api.at("/").get(vote);
         api.at("/new").serve_file(static_folder.join("new.html"))?;
         api.at("/new").post(new_vote);
@@ -104,12 +105,19 @@ where
     deserializer.deserialize_str(V)
 }
 
-async fn new_vote(mut req: Request<()>) -> tide::Result {
+async fn new_vote(mut req: Request) -> tide::Result {
     let vote: Vote = dbg!(req.body_form().await?);
+    let db = &req.state().db;
+
+    sqlx::query("INSERT INTO vote(title) values($1)")
+        .bind(vote.title)
+        .execute(db)
+        .await?;
+
     Ok(tide::StatusCode::NotImplemented.into())
 }
 
-async fn vote(req: Request<()>) -> tide::Result {
+async fn vote(req: Request) -> tide::Result {
     if let Ok(Join { code }) = req.query() {
         return Ok(tide::Redirect::new(&format!("/vote/{code}")).into());
     }

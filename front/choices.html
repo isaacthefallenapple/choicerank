@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hello, world!</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="" />
+    <!-- <link rel="icon" href="favicon.png" /> -->
+    <script
+      src="https://unpkg.com/htmx.org@1.9.4"
+      integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+
+  <body>
+    <h1>Create a new Vote!</h1>
+
+    <main>
+      <form hx-boost="true" action="/vote/new" method="post">
+        <section>
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" value="" />
+        </section>
+        <section>
+          <ul>
+            <li>
+              <span>Choice 1</span
+              ><button
+                type="button"
+                hx-patch="/vote/new"
+                hx-vals='{ "idx": 0 }'
+              >
+                Edit</button
+              ><button type="button">Remove</button>
+            </li>
+            <li>
+              <input type="text" name="" value="Choice 2" /><button
+                type="button"
+              >
+                Done</button
+              ><button type="button">Remove</button>
+            </li>
+          </ul>
+          <div id="new-choice-mask">
+            <label for="new-choice">New choice</label>
+            <input type="text" id="new-choice" name="new-choice" value="" />
+            <button
+              type="button"
+              hx-patch="/vote/new"
+              hx-include="#new-choice"
+              hx-swap="beforebegin"
+              hx-target="#new-choice-mask"
+            >
+              Add
+            </button>
+          </div>
+        </section>
+        <section>
+          <label for="choices">Max. choices</label>
+          <input type="number" id="choices" name="choices" value="" />
+
+          <label for="anonymous">Anonymous?</label>
+          <input type="checkbox" id="anonymous" name="anonymous" />
+
+          <label for="password">Password?</label>
+          <input type="text" id="password" name="password" value="" />
+
+          <button type="submit">Start</button>
+        </section>
+      </form>
+    </main>
+  </body>
+</html>
