@@ -34,13 +34,9 @@
             type="button"
             _="
               on click
-                append `
-                  <li>
-                    <input type='text' class='choice' />
-                    <button type='button' _='on click remove closest <li/> then decrement value of #max-choices'>Remove</button>
-                  </li>`
-                to #choice-list
-                increment value of #max-choices"
+                get #new-choice-template then put its innerHTML at the end of #choice-list
+                then set its *display to inherit
+                then "
           >
             Add choice
           </button>
@@ -59,5 +55,11 @@
         </section>
       </form>
     </main>
+    <template id="new-choice-template">
+      <li>
+        <input type="text" class="choice" />
+        <button type="button" _="on click remove closest <li/>">Remove</button>
+      </li>
+    </template>
   </body>
 </html>
