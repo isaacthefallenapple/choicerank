@@ -79,6 +79,8 @@ where
     deserializer.deserialize_str(V)
 }
 
+const SEPARATOR: char = '\x1F';
+
 fn deserialize_choices<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
 where
     D: Deserializer<'de>,
@@ -88,14 +90,17 @@ where
         type Value = Vec<String>;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_str("a sequence of strings separated by \"|||\"")
+            write!(
+                formatter,
+                "a sequence of strings separated by \"{SEPARATOR}\""
+            )
         }
 
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
         where
             E: serde::de::Error,
         {
-            Ok(v.split("|||")
+            Ok(v.split(SEPARATOR)
                 .filter(|s| !s.is_empty())
                 .map(ToString::to_string)
                 .collect())

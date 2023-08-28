@@ -24,7 +24,8 @@
               on change or input
                 set @value of target to value of target
                 set values to value of .choice
-                call values.join('|||') then set @value of <input[name='choices']/> to it"
+                js return '\x1f' end
+                call values.join(beep! it) then set @value of <input[name='choices']/> to it"
           >
             <li>
               <input type="text" class="choice" value="" />
