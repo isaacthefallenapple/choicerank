@@ -5,14 +5,37 @@ pub const CHOICE_SEPARATOR: char = '\x1F';
 #[derive(Debug, Deserialize)]
 pub struct Vote {
     pub title: String,
-    #[serde(deserialize_with = "deserialize_choices")]
-    choices: Vec<String>,
+    // #[serde(deserialize_with = "deserialize_choices")]
+    pub choices: Choices,
     #[serde(rename(deserialize = "max-choices"))]
     max_choices: usize,
     #[serde(default)]
     anonymous: bool,
     #[serde(deserialize_with = "deserialize_password")]
     password: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Choices(String);
+
+impl Choices {
+    pub fn iter(&self) -> impl Iterator<Item = &str> {
+        self.0.split(CHOICE_SEPARATOR)
+    }
+
+    pub fn collect(&self) -> Vec<&str> {
+        self.iter().collect()
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
+impl AsRef<[u8]> for Choices {
+    fn as_ref(&self) -> &[u8] {
+        self.as_bytes()
+    }
 }
 
 fn deserialize_password<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
