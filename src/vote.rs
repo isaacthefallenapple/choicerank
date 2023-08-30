@@ -4,15 +4,24 @@ pub const CHOICE_SEPARATOR: char = '\x1F';
 
 #[derive(Debug, Deserialize)]
 pub struct Vote {
-    pub title: String,
-    // #[serde(deserialize_with = "deserialize_choices")]
-    pub choices: Choices,
+    title: String,
+    choices: Choices,
     #[serde(rename(deserialize = "max-choices"))]
     max_choices: usize,
     #[serde(default)]
     anonymous: bool,
     #[serde(deserialize_with = "deserialize_password")]
     password: Option<String>,
+}
+
+impl Vote {
+    pub fn title(&self) -> &str {
+        &self.title
+    }
+
+    pub fn choices(&self) -> &Choices {
+        &self.choices
+    }
 }
 
 #[derive(Debug, Deserialize)]

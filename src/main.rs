@@ -1,18 +1,51 @@
-use std::path::PathBuf;
+use std::{
+    path::PathBuf,
+    sync::{Arc, Mutex, MutexGuard},
+};
 
 use serde::Deserialize;
-use sqlx::PgPool;
+use sqlx::{prelude::*, PgPool};
 
 use vote::Vote;
 
 mod vote;
 
-#[derive(Debug, Clone)]
-struct Model {
+#[derive(Debug)]
+struct PoolModel {
     db: PgPool,
+    model: Arc<Mutex<Model>>,
 }
 
-type Request = tide::Request<Model>;
+impl PoolModel {
+    fn new(db: PgPool, model: Model) -> Self {
+        Self {
+            db,
+            model: Arc::new(Mutex::new(model)),
+        }
+    }
+
+    fn model(&self) -> MutexGuard<'_, Model> {
+        self.model.lock().unwrap()
+    }
+}
+
+impl Clone for PoolModel {
+    fn clone(&self) -> Self {
+        Self {
+            db: self.db.clone(),
+            model: self.model.clone(),
+        }
+    }
+}
+
+#[derive(Debug)]
+enum Model {
+    Landing,
+    NewVote { id: i32, title: String },
+    Vote { id: i32, vote: vote::Vote },
+}
+
+type Request = tide::Request<PoolModel>;
 
 #[shuttle_runtime::main]
 async fn tide(
@@ -21,15 +54,16 @@ async fn tide(
         local_uri = "postgres://timob:{secrets.PASSWORD}@localhost:5432/choicerank"
     )]
     pool: PgPool,
-) -> shuttle_tide::ShuttleTide<Model> {
-    let mut app = tide::with_state(Model { db: pool.clone() });
+) -> shuttle_tide::ShuttleTide<PoolModel> {
+    let model = PoolModel::new(pool.clone(), Model::Landing);
+    let mut app = tide::with_state(model.clone());
 
     app.with(tide::log::LogMiddleware::new());
 
     // app.at("/").get(|_| async { Ok("Hello, world!") });
     app.at("/").serve_file(static_folder.join("index.html"))?;
     app.at("/vote").nest({
-        let mut api = tide::with_state(Model { db: pool });
+        let mut api = tide::with_state(model.clone());
         api.at("/").get(vote);
         api.at("/new").serve_file(static_folder.join("new.html"))?;
         api.at("/new").post(new_vote);
@@ -49,10 +83,18 @@ async fn new_vote(mut req: Request) -> tide::Result {
     let vote: Vote = dbg!(req.body_form().await?);
     let db = &req.state().db;
 
-    sqlx::query("INSERT INTO vote(title) values($1)")
-        .bind(vote.title)
-        .execute(db)
-        .await?;
+    let rec = sqlx::query!(
+        r"INSERT INTO vote(title, choices) values($1, $2) RETURNING id",
+        vote.title(),
+        vote.choices().as_bytes()
+    )
+    .fetch_one(db)
+    .await?;
+
+    *req.state().model() = Model::NewVote {
+        id: rec.id,
+        title: vote.title().to_string(),
+    };
 
     Ok(tide::StatusCode::NotImplemented.into())
 }
