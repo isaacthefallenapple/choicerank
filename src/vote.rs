@@ -9,7 +9,7 @@ pub struct Vote {
     title: String,
     choices: Choices,
     #[serde(rename(deserialize = "max-choices"))]
-    max_choices: usize,
+    max_choices: i32,
     #[serde(default)]
     anonymous: bool,
     #[serde(deserialize_with = "deserialize_password")]
@@ -35,9 +35,13 @@ impl Vote {
         &self.choices
     }
 
+    pub fn max_choices(&self) -> i32 {
+        self.max_choices
+    }
+
     pub fn render(&self) -> String {
         let mut html = String::from("<ul>");
-        for choice in self.choices().iter() {
+        for choice in self.choices() {
             writeln!(&mut html, "  <li>{choice}</li>").unwrap();
         }
         html.push_str("</ul>");
@@ -54,7 +58,7 @@ impl Choices {
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &str> {
-        self.0.split(CHOICE_SEPARATOR)
+        self.into_iter()
     }
 
     pub fn collect(&self) -> Vec<&str> {
@@ -63,6 +67,15 @@ impl Choices {
 
     pub fn as_bytes(&self) -> &[u8] {
         self.0.as_bytes()
+    }
+}
+
+impl<'a> IntoIterator for &'a Choices {
+    type Item = &'a str;
+    type IntoIter = std::str::Split<'a, char>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.split(CHOICE_SEPARATOR)
     }
 }
 
