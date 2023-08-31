@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use serde::{de::Deserializer, Deserialize};
 
 pub const CHOICE_SEPARATOR: char = '\x1F';
@@ -15,6 +17,16 @@ pub struct Vote {
 }
 
 impl Vote {
+    pub fn new(title: String, choices: String) -> Self {
+        Self {
+            title,
+            choices: Choices::new(choices),
+            max_choices: 0,
+            anonymous: false,
+            password: None,
+        }
+    }
+
     pub fn title(&self) -> &str {
         &self.title
     }
@@ -22,12 +34,25 @@ impl Vote {
     pub fn choices(&self) -> &Choices {
         &self.choices
     }
+
+    pub fn render(&self) -> String {
+        let mut html = String::from("<ul>");
+        for choice in self.choices().iter() {
+            writeln!(&mut html, "  <li>{choice}</li>").unwrap();
+        }
+        html.push_str("</ul>");
+        html
+    }
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Choices(String);
 
 impl Choices {
+    pub fn new(s: String) -> Self {
+        Self(s)
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &str> {
         self.0.split(CHOICE_SEPARATOR)
     }

@@ -6,7 +6,7 @@ use std::{
 use serde::Deserialize;
 use sqlx::{prelude::*, PgPool};
 
-use vote::Vote;
+use vote::{Choices, Vote};
 
 mod vote;
 
@@ -103,6 +103,15 @@ async fn vote(req: Request) -> tide::Result {
     if let Ok(Join { code }) = req.query() {
         return Ok(tide::Redirect::new(&format!("/vote/{code}")).into());
     }
-    let code = req.param("code")?;
-    return Ok(code.into());
+    let code: i32 = req.param("code")?.parse().unwrap();
+
+    let rec = sqlx::query!(r"SELECT title, choices FROM vote WHERE ID = $1", code)
+        .fetch_one(&req.state().db)
+        .await?;
+
+    let vote = Vote::new(
+        rec.title.unwrap(),
+        String::from_utf8(rec.choices.unwrap()).expect("choices aren't utf-8"),
+    );
+    return Ok(vote.render().into());
 }
