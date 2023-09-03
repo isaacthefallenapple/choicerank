@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title></title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
+  </head>
+  <body>
+    <h1>{{ title }}</h1>
+
+    <form action="rank" method="post">
+      <input
+        type="hidden"
+        name="ranking"
+        id="ranking"
+        _="
+          on update
+            make Array from {{ max_choices }} called rankings
+            repeat in <tr/> in next <tbody/>
+              set rankings[it@choice] to Number(it@ranked)
+            end
+            set my value to beep! JSON.stringify(beep! rankings)
+          init trigger update"
+      />
+      <button>Hello</button>
+    </form>
+
+    <table _="on change trigger update on #ranking">
+      <thead>
+        <tr>
+          <th rowspan="2">Choice</th>
+          <th colspan="4">Rank</th>
+        </tr>
+        <tr>
+          {% for rank in 1..=max_choices %}
+          <th>{{ rank }}th</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for choice in choices %} {% let i = loop.index0 %}
+        <tr
+          choice="{{ i }}"
+          ranked="0"
+          _="
+            init
+              repeat in <input/> in me
+                if @ranked == it@rank
+                  set it.checked to true
+                  -- trigger change
+                  break
+                end
+              end
+            end
+            on change set @ranked to target@rank
+              if @ranked == 0 then exit end
+              repeat in <tr/> in closest <tbody/> index i
+                if it is me continue end
+                if it@ranked != @ranked then continue end
+                send unrank to it
+              end
+            end
+            on unrank set @ranked to 0 then set (last of <input/> in me).checked to true"
+        >
+          <td>{{ choice }}</td>
+          {% for rank in 1..=max_choices %}
+          <td>
+            <input
+              type="radio"
+              name="choice-{{ i }}"
+              value=""
+              rank="{{ rank }}"
+            />
+            <!-- _="on change send ranked(choice: {{ i }}, rank: {{ rank }}) to #ranking" -->
+          </td>
+          {% endfor %}
+          <td>
+            <input
+              type="radio"
+              name="choice-{{ i }}"
+              value=""
+              rank="0"
+              checked
+            />
+            <!-- _="on change send unrank(choice: 1) to #ranking" -->
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>
