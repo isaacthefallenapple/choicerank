@@ -51,22 +51,11 @@
           <td>{{ choice }}</td>
           {% for rank in 1..=max_choices %}
           <td>
-            <input
-              type="radio"
-              name="choice-{{ i }}"
-              value=""
-              rank="{{ rank }}"
-            />
+            <input type="radio" name="choice-{{ i }}" rank="{{ rank }}" />
           </td>
           {% endfor %}
           <td>
-            <input
-              type="radio"
-              name="choice-{{ i }}"
-              value=""
-              rank="0"
-              checked
-            />
+            <input type="radio" name="choice-{{ i }}" rank="0" checked />
           </td>
         </tr>
         {% endfor %}
