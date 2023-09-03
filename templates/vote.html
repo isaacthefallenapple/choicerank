@@ -9,24 +9,7 @@
   <body>
     <h1>{{ title }}</h1>
 
-    <form action="rank" method="post">
-      <input
-        type="hidden"
-        name="ranking"
-        id="ranking"
-        _="
-          on update
-            make Array from {{ max_choices }} called rankings
-            repeat in <tr/> in next <tbody/>
-              set rankings[it@choice] to Number(it@ranked)
-            end
-            set my value to beep! JSON.stringify(beep! rankings)
-          init trigger update"
-      />
-      <button>Hello</button>
-    </form>
-
-    <table _="on change trigger update on #ranking">
+    <table id="ballot" _="on change trigger update on #ranking">
       <thead>
         <tr>
           <th rowspan="2">Choice</th>
@@ -34,7 +17,9 @@
         </tr>
         <tr>
           {% for rank in 1..=max_choices %}
-          <th>{{ rank }}th</th>
+          <th _="init immediately put ordinalize({{ rank }}) into me">
+            {{ rank }}
+          </th>
           {% endfor %}
         </tr>
       </thead>
@@ -89,5 +74,43 @@
         {% endfor %}
       </tbody>
     </table>
+
+    <form action="rank" method="post">
+      <input
+        type="hidden"
+        name="ranking"
+        id="ranking"
+        _="
+          on update
+            make Array from {{ max_choices }} called rankings
+            repeat in <tr/> in <tbody/> in #ballot
+              set rankings[it@choice] to Number(it@ranked)
+            end
+            set my value to beep! JSON.stringify(beep! rankings)
+          init trigger update"
+      />
+
+      <label for="name">Name</label>
+      <input type="text" name="name" id="name" value="" required />
+      <button>Submit</button>
+    </form>
+
+    <script type="text/hyperscript">
+      def ordinalize(n)
+        return `${n}${getSuffix(n)}`
+      end
+
+      def getSuffix(n)
+        set suffixes to ["th", "st", "nd", "rd"]
+
+        if n <= 3 then return suffixes[n]
+        if n <= 20 then return suffixes[0]
+
+        set lastDigit to n mod 10
+        if lastDigit <= 3 then return suffixes[lastDigit]
+
+        return suffixes[0]
+      end
+    </script>
   </body>
 </html>
