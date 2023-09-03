@@ -1,10 +1,10 @@
-use std::fmt::Write;
-
+use askama::Template;
 use serde::{de::Deserializer, Deserialize};
 
 pub const CHOICE_SEPARATOR: char = '\x1F';
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Template)]
+#[template(path = "vote.html")]
 pub struct Vote {
     title: String,
     choices: Choices,
@@ -17,11 +17,11 @@ pub struct Vote {
 }
 
 impl Vote {
-    pub fn new(title: String, choices: String) -> Self {
+    pub fn new(title: String, choices: String, max_choices: i32) -> Self {
         Self {
             title,
             choices: Choices::new(choices),
-            max_choices: 0,
+            max_choices,
             anonymous: false,
             password: None,
         }
@@ -37,15 +37,6 @@ impl Vote {
 
     pub fn max_choices(&self) -> i32 {
         self.max_choices
-    }
-
-    pub fn render(&self) -> String {
-        let mut html = String::from("<ul>");
-        for choice in self.choices() {
-            writeln!(&mut html, "  <li>{choice}</li>").unwrap();
-        }
-        html.push_str("</ul>");
-        html
     }
 }
 

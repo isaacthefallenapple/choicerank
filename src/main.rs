@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
+use askama::Template;
 use serde::Deserialize;
 use sqlx::{prelude::*, PgPool};
 
@@ -67,7 +68,7 @@ async fn tide(
         api.at("/").get(vote);
         api.at("/new").serve_file(static_folder.join("new.html"))?;
         api.at("/new").post(new_vote);
-        api.at("/:code").get(vote);
+        api.at("/:code/").get(vote);
         api
     });
 
@@ -84,9 +85,10 @@ async fn new_vote(mut req: Request) -> tide::Result {
     let db = &req.state().db;
 
     let rec = sqlx::query!(
-        r"INSERT INTO vote(title, choices) values($1, $2) RETURNING id",
+        r"INSERT INTO vote(title, choices, max_choices) values($1, $2, $3) RETURNING id",
         vote.title(),
-        vote.choices().as_bytes()
+        vote.choices().as_bytes(),
+        vote.max_choices() as i32,
     )
     .fetch_one(db)
     .await?;
@@ -101,17 +103,21 @@ async fn new_vote(mut req: Request) -> tide::Result {
 
 async fn vote(req: Request) -> tide::Result {
     if let Ok(Join { code }) = req.query() {
-        return Ok(tide::Redirect::new(&format!("/vote/{code}")).into());
+        return Ok(tide::Redirect::new(&format!("/vote/{code}/")).into());
     }
     let code: i32 = req.param("code")?.parse().unwrap();
 
-    let rec = sqlx::query!(r"SELECT title, choices FROM vote WHERE ID = $1", code)
-        .fetch_one(&req.state().db)
-        .await?;
+    let rec = sqlx::query!(
+        r"SELECT title, choices, max_choices FROM vote WHERE ID = $1",
+        code
+    )
+    .fetch_one(&req.state().db)
+    .await?;
 
     let vote = Vote::new(
-        rec.title.unwrap(),
-        String::from_utf8(rec.choices.unwrap()).expect("choices aren't utf-8"),
+        rec.title,
+        String::from_utf8(rec.choices).expect("choices aren't utf-8"),
+        rec.max_choices,
     );
-    return Ok(vote.render().into());
+    return Ok(vote.render().unwrap().into());
 }
