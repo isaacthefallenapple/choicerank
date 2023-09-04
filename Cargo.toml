@@ -12,4 +12,5 @@ shuttle-static-folder = "0.24.0"
 serde = { version = "1.0.183", features = ["derive"] }
 shuttle-aws-rds = { version = "0.24.0", features = ["postgres"] }
 sqlx = { version = "0.7.1", features = ["runtime-tokio-native-tls", "postgres"] }
-askama = "0.12.0"
+askama = { version = "0.12.0", features = ["with-tide"] }
+askama_tide = "0.15.0"

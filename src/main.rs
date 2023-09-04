@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     path::PathBuf,
     sync::{Arc, Mutex, MutexGuard},
 };
@@ -69,6 +70,7 @@ async fn tide(
         api.at("/new").serve_file(static_folder.join("new.html"))?;
         api.at("/new").post(new_vote);
         api.at("/:code/").get(vote);
+        api.at("/:code/").post(submit_ranking);
         api
     });
 
@@ -93,12 +95,37 @@ async fn new_vote(mut req: Request) -> tide::Result {
     .fetch_one(db)
     .await?;
 
+    let id = rec.id;
+
     *req.state().model() = Model::NewVote {
-        id: rec.id,
+        id,
         title: vote.title().to_string(),
     };
 
-    Ok(tide::StatusCode::NotImplemented.into())
+    Ok(tide::Redirect::new(&format!("/vote/{id}/")).into())
+}
+
+async fn submit_ranking(mut req: Request) -> tide::Result {
+    let id: i32 = req.param("code")?.parse().unwrap();
+
+    let value: HashMap<String, String> = req.body_form().await?;
+
+    let db = &req.state().db;
+
+    let mut transaction = db.begin().await?;
+
+    sqlx::query!(
+        r"INSERT INTO ranking VALUES ($1, $2, $3)",
+        id,
+        value["name"],
+        value["ranking"].as_bytes()
+    )
+    .execute(&mut *transaction)
+    .await?;
+
+    transaction.commit().await?;
+
+    Ok(tide::StatusCode::Created.into())
 }
 
 async fn vote(req: Request) -> tide::Result {
@@ -119,5 +146,6 @@ async fn vote(req: Request) -> tide::Result {
         String::from_utf8(rec.choices).expect("choices aren't utf-8"),
         rec.max_choices,
     );
-    return Ok(vote.render().unwrap().into());
+
+    return Ok(vote.into());
 }

@@ -173,6 +173,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "619743e34b5ba4e9703bba34deac3427c72507c7159f5fd030aea8cac0cfe341"
 
 [[package]]
+name = "askama_tide"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4946e083aa3fc9077505733e49c113bcd07357817ee87ecd5f7b5b5979091860"
+dependencies = [
+ "askama",
+ "tide",
+]
+
+[[package]]
 name = "async-channel"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -623,6 +633,7 @@ name = "choicerank"
 version = "0.1.0"
 dependencies = [
  "askama",
+ "askama_tide",
  "serde",
  "shuttle-aws-rds",
  "shuttle-runtime",
