@@ -70,7 +70,7 @@
         id="ranking"
         _="
           on update
-            make Array from {{ max_choices }} called rankings
+            set rankings to {}
             repeat in <tr/> in <tbody/> in #ballot
               set rankings[it@choice] to Number(it@ranked)
             end
