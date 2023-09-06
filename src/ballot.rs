@@ -27,8 +27,26 @@ pub async fn get(req: Request) -> tide::Result {
     Ok(ballot.into())
 }
 
-pub async fn post(_req: Request) -> tide::Result {
-    todo!()
+pub async fn post(mut req: Request) -> tide::Result {
+    let id = id(&req)?;
+
+    let ranking: Ranking = req.body_form().await?;
+
+    let _ = sqlx::query!(
+        r#"insert into ranking (id, name, ranking) values ($1, $2, $3)"#,
+        id,
+        ranking.name,
+        ranking.ranking,
+    )
+    .execute(req.state().db())
+    .await?;
+
+    let results = format!("/vote/{id}/results");
+
+    let mut response: tide::Response = tide::StatusCode::Created.into();
+    response.insert_header("HX-Location", results);
+
+    Ok(response)
 }
 
 pub async fn new(mut req: Request) -> tide::Result {
@@ -61,6 +79,12 @@ pub struct Ballot {
     // anonymous: bool,
     // #[serde(deserialize_with = "deserialize_password")]
     // password: Option<String>,
+}
+
+#[derive(Debug, Deserialize, FromRow)]
+struct Ranking {
+    name: String,
+    ranking: String,
 }
 
 // impl Ballot {
