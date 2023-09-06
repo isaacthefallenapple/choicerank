@@ -44,7 +44,7 @@ pub async fn post(mut req: Request) -> tide::Result {
     let results = format!("/vote/{id}/results");
 
     let mut response: tide::Response = tide::StatusCode::Created.into();
-    response.insert_header("HX-Location", results);
+    response.insert_header("HX-Redirect", results);
 
     Ok(response)
 }
