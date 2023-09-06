@@ -35,7 +35,7 @@ pub async fn post(mut req: Request) -> tide::Result {
 
     req.state()
         .send_to(id, "voter", &format!("<li>{}</li>", &ranking.name))
-        .await?;
+        .await;
 
     let _ = sqlx::query!(
         r#"insert into ranking (id, name, ranking) values ($1, $2, $3)"#,
@@ -86,7 +86,7 @@ pub async fn results(_req: Request) -> tide::Result {
 
 pub async fn live(req: Request, sender: sse::Sender) -> tide::Result<()> {
     let id = id(&req)?;
-    req.state().insert_sse_sender(id, sender).await;
+    req.state().register_sse_sender(id, sender).await;
 
     Ok(())
 }

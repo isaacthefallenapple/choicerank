@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use sqlx::PgPool;
 use tide::sse;
@@ -9,14 +9,14 @@ pub type Request = tide::Request<State>;
 #[derive(Clone, Debug)]
 pub struct State {
     db: PgPool,
-    sse: Arc<sync::RwLock<HashMap<i32, Vec<sse::Sender>>>>,
+    sse: sync::mpsc::Sender<SseEvent>,
 }
 
 impl State {
-    pub fn new(db: PgPool) -> Self {
+    pub fn new(db: PgPool, sse_sender: sync::mpsc::Sender<SseEvent>) -> Self {
         Self {
             db,
-            sse: Arc::new(sync::RwLock::new(HashMap::new())),
+            sse: sse_sender,
         }
     }
 
@@ -24,21 +24,77 @@ impl State {
         &self.db
     }
 
-    pub async fn insert_sse_sender(&self, id: i32, sender: sse::Sender) {
-        let mut map = self.sse.write().await;
-        map.entry(id).or_default().push(sender);
+    pub async fn register_sse_sender(&self, id: i32, sender: sse::Sender) {
+        let _ = inspect_err(self.sse.send(SseEvent::RegisterSender { id, sender }).await);
     }
 
-    pub async fn send_to(&self, id: i32, name: &str, value: &str) -> tide::Result<()> {
-        let map = self.sse.read().await;
-        let Some(senders) = map.get(&id) else {
-            return Ok(());
-        };
+    pub async fn send_to(&self, id: i32, name: &str, value: &str) {
+        let _ = inspect_err(
+            self.sse
+                .send(SseEvent::BroadcastEvent {
+                    receiver: id,
+                    name: name.to_string(),
+                    data: value.to_string(),
+                })
+                .await,
+        );
+    }
+}
 
-        for sender in senders {
-            sender.send(name, value, None).await?;
+pub async fn handle_sse(mut rx: sync::mpsc::Receiver<SseEvent>) {
+    fn is_closed(err: &std::io::Error) -> bool {
+        err.kind() == std::io::ErrorKind::ConnectionAborted
+    }
+
+    let mut map: HashMap<i32, Vec<Option<sse::Sender>>> = HashMap::new();
+
+    while let Some(event) = rx.recv().await {
+        match event {
+            SseEvent::RegisterSender { id, sender } => {
+                map.entry(id).or_default().push(Some(sender));
+            }
+            SseEvent::BroadcastEvent {
+                ref receiver,
+                name,
+                data,
+            } => {
+                let Some(receivers) = map.get_mut(receiver) else {
+                    continue;
+                };
+
+                for slot in receivers.iter_mut() {
+                    let Some(receiver) = slot.take() else { continue; };
+                    let is_closed = match receiver.send(&name, &data, None).await {
+                        Err(ref err) => is_closed(err),
+                        _ => false,
+                    };
+                    if !is_closed {
+                        *slot = Some(receiver);
+                    }
+                }
+
+                receivers.retain(Option::is_some);
+            }
         }
-
-        Ok(())
     }
+}
+
+pub enum SseEvent {
+    RegisterSender {
+        id: i32,
+        sender: sse::Sender,
+    },
+    BroadcastEvent {
+        receiver: i32,
+        name: String,
+        data: String,
+    },
+}
+
+fn inspect_err<T, E: std::fmt::Debug>(res: Result<T, E>) -> Result<T, E> {
+    if let Err(e) = res.as_ref() {
+        eprintln!("{e:?}");
+    }
+
+    res
 }

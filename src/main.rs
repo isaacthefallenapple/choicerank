@@ -15,7 +15,11 @@ async fn tide(
     )]
     pool: PgPool,
 ) -> shuttle_tide::ShuttleTide<State> {
-    let model = State::new(pool.clone());
+    let (tx, rx) = tokio::sync::mpsc::channel(16);
+
+    tokio::spawn(state::handle_sse(rx));
+
+    let model = State::new(pool.clone(), tx);
     let mut app = tide::with_state(model.clone());
 
     app.with(tide::log::LogMiddleware::new());
