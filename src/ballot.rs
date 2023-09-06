@@ -44,7 +44,7 @@ pub async fn post(mut req: Request) -> tide::Result {
     let results = format!("/vote/{id}/results");
 
     let mut response: tide::Response = tide::StatusCode::Created.into();
-    response.insert_header("HX-Redirect", results);
+    set_client_side_redirect(&mut response, results);
 
     Ok(response)
 }
@@ -65,7 +65,10 @@ pub async fn new(mut req: Request) -> tide::Result {
 
     let redirect = format!("/vote/{id}/ballot");
 
-    Ok(tide::Redirect::new(redirect).into())
+    let mut response: tide::Response = tide::StatusCode::Created.into();
+    set_client_side_redirect(&mut response, redirect);
+
+    Ok(response)
 }
 
 #[derive(Debug, Deserialize, Template, FromRow)]
@@ -152,6 +155,12 @@ impl AsRef<str> for Choices {
     }
 }
 
+fn set_client_side_redirect(
+    resp: &mut tide::Response,
+    location: impl tide::http::headers::ToHeaderValues,
+) {
+    resp.insert_header("HX-Redirect", location)
+}
 fn _deserialize_password<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
     D: Deserializer<'de>,
