@@ -1,7 +1,6 @@
 use askama::Template;
 use serde::{de::Deserializer, Deserialize};
 use sqlx::FromRow;
-use tide;
 use tide::sse;
 
 use crate::Request;
