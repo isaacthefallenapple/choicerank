@@ -34,7 +34,7 @@ async fn tide(
 
     app.at("/vote/:code/").nest({
         let mut api = tide::with_state(model.clone());
-        api.at("ballot").get(ballot::get).post(ballot::post);
+        api.at("ballot").get(ballot::get).post(ballot::submit);
         api.at("results").get(ballot::results);
         api.at("results/live").get(sse::endpoint(ballot::live));
         api

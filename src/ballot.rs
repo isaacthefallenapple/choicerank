@@ -27,7 +27,7 @@ pub async fn get(req: Request) -> tide::Result {
     Ok(ballot.into())
 }
 
-pub async fn post(mut req: Request) -> tide::Result {
+pub async fn submit(mut req: Request) -> tide::Result {
     let id = id(&req)?;
 
     let ranking: Ranking = req.body_form().await?;
