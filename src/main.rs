@@ -21,6 +21,8 @@ async fn tide(
     app.with(tide::log::LogMiddleware::new());
 
     // app.at("/").get(|_| async { Ok("Hello, world!") });
+    app.at("/front/assets")
+        .serve_dir(static_folder.join("assets"))?;
     app.at("/").serve_file(static_folder.join("index.html"))?;
     app.at("/new")
         .post(ballot::new)
