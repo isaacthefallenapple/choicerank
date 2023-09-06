@@ -11,7 +11,7 @@
     <h1>Create a new Vote!</h1>
 
     <main>
-      <form hx-boost="true" action="/new" method="post">
+      <form hx-boost="true">
         <section>
           <label for="title">Title</label>
           <input type="text" id="title" name="title" value="" />
@@ -52,7 +52,20 @@
           <label for="password">Password?</label>
           <input type="text" id="password" name="password" value="" />
 
-          <button type="submit">Start</button>
+          <button
+            type="button"
+            hx-post="/new?redirect=ballot"
+            hx-headers='{ "Location": "ballot" }'
+          >
+            Start
+          </button>
+          <button
+            type="button"
+            hx-post="/new?redirect=results"
+            hx-headers='{ "Location": "results" }'
+          >
+            Results
+          </button>
         </section>
       </form>
     </main>

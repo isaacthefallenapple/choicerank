@@ -57,6 +57,11 @@ pub async fn post(mut req: Request) -> tide::Result {
 pub async fn new(mut req: Request) -> tide::Result {
     let ballot: Ballot = req.body_form().await?;
 
+    let redirect_target = req
+        .header("location")
+        .map(|s| s.as_str())
+        .unwrap_or("ballot");
+
     let rec = sqlx::query!(
         r#"insert into ballot (title, choices, max_choices) values ($1, $2, $3) returning id"#,
         ballot.title,
@@ -68,7 +73,7 @@ pub async fn new(mut req: Request) -> tide::Result {
 
     let id = rec.id;
 
-    let redirect = format!("/vote/{id}/ballot");
+    let redirect = format!("/vote/{id}/{redirect_target}");
 
     let mut response: tide::Response = tide::StatusCode::Created.into();
     set_client_side_redirect(&mut response, redirect);
