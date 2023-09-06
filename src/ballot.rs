@@ -2,6 +2,7 @@ use askama::Template;
 use serde::{de::Deserializer, Deserialize};
 use sqlx::FromRow;
 use tide;
+use tide::sse;
 
 use crate::Request;
 
@@ -31,6 +32,10 @@ pub async fn post(mut req: Request) -> tide::Result {
     let id = id(&req)?;
 
     let ranking: Ranking = req.body_form().await?;
+
+    req.state()
+        .send_to(id, "voter", &format!("<li>{}</li>", &ranking.name))
+        .await?;
 
     let _ = sqlx::query!(
         r#"insert into ranking (id, name, ranking) values ($1, $2, $3)"#,
@@ -69,6 +74,21 @@ pub async fn new(mut req: Request) -> tide::Result {
     set_client_side_redirect(&mut response, redirect);
 
     Ok(response)
+}
+
+pub async fn results(_req: Request) -> tide::Result {
+    let mut res = tide::Response::new(tide::StatusCode::Ok);
+    let body: tide::Body = dbg!(tide::Body::from_file("front/results.html").await)?;
+    res.set_body(body);
+
+    Ok(res)
+}
+
+pub async fn live(req: Request, sender: sse::Sender) -> tide::Result<()> {
+    let id = id(&req)?;
+    req.state().insert_sse_sender(id, sender).await;
+
+    Ok(())
 }
 
 #[derive(Debug, Deserialize, Template, FromRow)]

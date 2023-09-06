@@ -2,9 +2,9 @@ use std::path::PathBuf;
 
 use sqlx::PgPool;
 pub use state::{Request, State};
+use tide::sse;
 
 mod ballot;
-mod results;
 mod state;
 
 #[shuttle_runtime::main]
@@ -31,7 +31,8 @@ async fn tide(
     app.at("/vote/:code/").nest({
         let mut api = tide::with_state(model.clone());
         api.at("ballot").get(ballot::get).post(ballot::post);
-        api.at("results").get(results::get);
+        api.at("results").get(ballot::results);
+        api.at("results/live").get(sse::endpoint(ballot::live));
         api
     });
 

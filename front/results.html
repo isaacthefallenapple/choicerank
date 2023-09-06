@@ -9,9 +9,16 @@
       integrity="sha384-zUfuhFKKZCbHTY6aRR46gxiqszMk5tcHjsVFxnUo8VMus4kHGVdIYVbOYYNlKmHV"
       crossorigin="anonymous"
     ></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/sse.js"></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
   </head>
   <body>
     <img src="/front/assets/spinner.gif" alt="" />
+    <ul
+      hx-ext="sse"
+      sse-connect="results/live"
+      sse-swap="voter"
+      hx-swap="beforeend"
+    ></ul>
   </body>
 </html>
