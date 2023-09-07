@@ -2,7 +2,8 @@ CREATE TABLE ballot (
     id serial primary key,
     title varchar(63) not null,
     choices text not null,
-    max_choices integer not null
+    max_choices integer not null,
+    open boolean not null
 );
 
 CREATE TABLE ranking (
