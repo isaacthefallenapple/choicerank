@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use askama::Template;
 use serde::{de::Deserializer, Deserialize};
 use sqlx::FromRow;
@@ -18,7 +20,11 @@ pub async fn get(req: Request) -> tide::Result {
 
     let ballot = sqlx::query_as!(
         Ballot,
-        r#"select title, choices as "choices: _", max_choices from ballot where id = $1"#,
+        r#"
+SELECT title, choices as "choices: _", max_choices
+FROM ballot
+WHERE id = $1 AND open = true
+        "#,
         id
     )
     .fetch_one(req.state().db())
@@ -37,7 +43,10 @@ pub async fn submit(mut req: Request) -> tide::Result {
         .await;
 
     let _ = sqlx::query!(
-        r#"insert into ranking (id, name, ranking) values ($1, $2, $3)"#,
+        r#"
+INSERT INTO ranking (id, name, ranking)
+VALUES ($1, $2, $3)
+        "#,
         id,
         ranking.name,
         ranking.ranking,
@@ -62,10 +71,14 @@ pub async fn new(mut req: Request) -> tide::Result {
         .unwrap_or("ballot");
 
     let rec = sqlx::query!(
-        r#"insert into ballot (title, choices, max_choices) values ($1, $2, $3) returning id"#,
+        r#"
+INSERT INTO ballot (title, choices, max_choices, open)
+VALUES ($1, $2, $3, $4)
+RETURNING id"#,
         ballot.title,
         ballot.choices.0,
-        ballot.max_choices
+        ballot.max_choices,
+        true,
     )
     .fetch_one(req.state().db())
     .await?;
@@ -80,10 +93,36 @@ pub async fn new(mut req: Request) -> tide::Result {
     Ok(response)
 }
 
-pub async fn results(_req: Request) -> tide::Result {
-    let mut res = tide::Response::new(tide::StatusCode::Ok);
-    let body: tide::Body = dbg!(tide::Body::from_file("front/results.html").await)?;
-    res.set_body(body);
+pub async fn results(req: Request) -> tide::Result {
+    let id = id(&req)?;
+
+    struct Row {
+        name: Option<String>,
+        ranking: String,
+    }
+
+    let rows = sqlx::query_as!(
+        Row,
+        r#"
+select name, ranking
+from ranking
+where id = $1
+        "#,
+        id
+    )
+    .fetch_all(req.state().db())
+    .await?;
+
+    let rankings: HashMap<String, String> = rows
+        .into_iter()
+        .map(|row| (row.name.unwrap_or_default(), row.ranking))
+        .collect();
+
+    let results = Results { rankings };
+
+    let mut res: tide::Response = results.into();
+
+    res.set_status(tide::StatusCode::Ok);
 
     Ok(res)
 }
@@ -93,6 +132,12 @@ pub async fn live(req: Request, sender: sse::Sender) -> tide::Result<()> {
     req.state().register_sse_sender(id, sender).await;
 
     Ok(())
+}
+
+#[derive(Debug, Template)]
+#[template(path = "results.html")]
+struct Results {
+    rankings: HashMap<String, String>,
 }
 
 #[derive(Debug, Deserialize, Template, FromRow)]
