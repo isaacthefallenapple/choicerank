@@ -18,11 +18,11 @@
       def getSuffix(n)
         set suffixes to ["th", "st", "nd", "rd"]
 
-        if n <= 3 then return suffixes[n]
-        if n <= 20 then return suffixes[0]
+        if n <= 3 then return suffixes[n] end
+        if n <= 20 then return suffixes[0] end
 
         set lastDigit to n mod 10
-        if lastDigit <= 3 then return suffixes[lastDigit]
+        if lastDigit <= 3 then return suffixes[lastDigit] end
 
         return suffixes[0]
       end
