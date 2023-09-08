@@ -10,6 +10,23 @@
       crossorigin="anonymous"
     ></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.11"></script>
+    <script type="text/hyperscript">
+      def ordinalize(n)
+        return `${n}${getSuffix(n)}`
+      end
+
+      def getSuffix(n)
+        set suffixes to ["th", "st", "nd", "rd"]
+
+        if n <= 3 then return suffixes[n]
+        if n <= 20 then return suffixes[0]
+
+        set lastDigit to n mod 10
+        if lastDigit <= 3 then return suffixes[lastDigit]
+
+        return suffixes[0]
+      end
+    </script>
   </head>
   <body>
     <h1>{{ title }}</h1>
@@ -87,23 +104,5 @@
       <input type="text" name="name" id="name" value="" required />
       <button>Submit</button>
     </form>
-
-    <script type="text/hyperscript">
-      def ordinalize(n)
-        return `${n}${getSuffix(n)}`
-      end
-
-      def getSuffix(n)
-        set suffixes to ["th", "st", "nd", "rd"]
-
-        if n <= 3 then return suffixes[n]
-        if n <= 20 then return suffixes[0]
-
-        set lastDigit to n mod 10
-        if lastDigit <= 3 then return suffixes[lastDigit]
-
-        return suffixes[0]
-      end
-    </script>
   </body>
 </html>
