@@ -24,8 +24,9 @@
               on change or input
                 set @value of target to value of target
                 set values to value of .choice
+                -- this is annoying but the only way to get a hex escape
                 js return '\x1f' end
-                call values.join(beep! it) then set @value of <input[name='choices']/> to it"
+                call values.join(it) then set @value of <input[name='choices']/> to the result"
           >
             <li>
               <input type="text" class="choice" value="" />
