@@ -36,13 +36,37 @@
             _="
               on click
                 get #new-choice-template then put its innerHTML at the end of #choice-list
+                send added to #max-choices"
           >
             Add choice
           </button>
         </section>
         <section>
           <label for="max-choices">Max. choices</label>
-          <input type="number" id="max-choices" name="max-choices" value="1" />
+          <input
+            type="number"
+            id="max-choices"
+            name="max-choices"
+            value="1"
+            min="1"
+            _="
+              def choiceCount()
+                return length of <input/> in #choice-list
+              end
+              init set my value to choiceCount() end
+              on input set :manual to true end
+              on added or removed
+                set @max to choiceCount()
+              end
+              on added
+                if :manual then exit end
+                increment my value
+              end
+              on removed
+                if choiceCount() >= my value then exit end
+                decrement my value
+              end"
+          />
 
           <label for="anonymous">Anonymous?</label>
           <input type="checkbox" id="anonymous" name="anonymous" value="true" />
@@ -70,7 +94,12 @@
     <template id="new-choice-template">
       <li>
         <input type="text" class="choice" />
-        <button type="button" _="on click remove closest <li/>">Remove</button>
+        <button
+          type="button"
+          _="on click remove closest <li/> then send removed to #max-choices"
+        >
+          Remove
+        </button>
       </li>
     </template>
   </body>
