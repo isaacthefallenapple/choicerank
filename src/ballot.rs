@@ -18,17 +18,7 @@ fn id(req: &Request) -> tide::Result<i32> {
 pub async fn get(req: Request) -> tide::Result {
     let id = id(&req)?;
 
-    let ballot = sqlx::query_as!(
-        Ballot,
-        r#"
-SELECT title, choices as "choices: _", max_choices
-FROM ballot
-WHERE id = $1 AND open = true
-        "#,
-        id
-    )
-    .fetch_one(req.state().db())
-    .await?;
+    let ballot = select_ballot(req.state().db(), id).await?;
 
     Ok(ballot.into())
 }
@@ -134,6 +124,26 @@ pub async fn live(req: Request, sender: sse::Sender) -> tide::Result<()> {
     Ok(())
 }
 
+pub async fn join(req: Request) -> tide::Result {
+    #[derive(Deserialize)]
+    struct Join {
+        code: i32,
+    }
+
+    let Join { code } = req.query()?;
+
+    let ballot: Ballot = match select_ballot(req.state().db(), code).await {
+        Ok(ballot) => ballot.into(),
+        Err(sqlx::Error::RowNotFound) => return Ok(tide::StatusCode::NotFound.into()),
+        Err(err) => return Err(err.into()),
+    };
+
+    let mut resp: tide::Response = ballot.into();
+    resp.insert_header("HX-Push-Url", format!("/vote/{code}/ballot"));
+
+    Ok(resp)
+}
+
 #[derive(Debug, Template)]
 #[template(path = "results.html")]
 struct Results {
@@ -230,6 +240,23 @@ fn set_client_side_redirect(
 ) {
     resp.insert_header("HX-Redirect", location)
 }
+
+pub async fn select_ballot(pool: &sqlx::PgPool, id: i32) -> sqlx::Result<Ballot> {
+    let ballot = sqlx::query_as!(
+        Ballot,
+        r#"
+SELECT title, choices as "choices: _", max_choices
+FROM ballot
+WHERE id = $1 AND open = true
+        "#,
+        id
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(ballot)
+}
+
 fn _deserialize_password<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
 where
     D: Deserializer<'de>,

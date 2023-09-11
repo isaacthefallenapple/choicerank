@@ -32,6 +32,8 @@ async fn tide(
         .post(ballot::new)
         .serve_file(static_folder.join("new.html"))?;
 
+    app.at("/join").get(ballot::join);
+
     app.at("/vote/:code/").nest({
         let mut api = tide::with_state(model.clone());
         api.at("ballot").get(ballot::get).post(ballot::submit);
