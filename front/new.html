@@ -78,6 +78,7 @@
           <button
             type="button"
             hx-post="/new?redirect=ballot"
+            hx-target="body"
             hx-headers='{ "Location": "ballot" }'
           >
             Start
@@ -85,6 +86,7 @@
           <button
             type="button"
             hx-post="/new?redirect=results"
+            hx-target="body"
             hx-headers='{ "Location": "results" }'
           >
             Results

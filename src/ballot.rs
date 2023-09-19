@@ -77,8 +77,9 @@ RETURNING id"#,
 
     let redirect = format!("/vote/{id}/{redirect_target}");
 
-    let mut response: tide::Response = tide::StatusCode::Created.into();
-    set_client_side_redirect(&mut response, redirect);
+    let mut response: tide::Response = ballot.into();
+    response.set_status(tide::StatusCode::Created);
+    response.insert_header("HX-Push-Url", redirect);
 
     Ok(response)
 }
